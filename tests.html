@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ca">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Proves · HRMS Manager</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .tests { max-width: 760px; margin: 0 auto; padding: 28px 16px; }
+    .tests ul { list-style: none; margin: 0; padding: 0; }
+    .tests li { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--gray-100); overflow-wrap: anywhere; }
+    .tests li b { flex: none; width: 34px; }
+    .pass { color: var(--green); }
+    .fail { color: var(--red); }
+    .tests h2 { margin: 22px 0 8px; font-size: 17px; }
+  </style>
+</head>
+<body>
+  <main class="tests">
+    <h1>Proves automàtiques</h1>
+    <p id="summary" class="muted">Executant…</p>
+    <div id="results"></div>
+  </main>
+  <script src="vendor/jszip.min.js"></script>
+  <script src="js/chem.js"></script>
+  <script src="js/docx-filler.js"></script>
+  <script src="js/pdf-filler.js"></script>
+  <script src="js/test-suite.js"></script>
+  <script>
+    (async () => {
+      const {
+        MASS_TESTS, docxTests, pdfTests, runTests,
+      } = window.HRMS.tests;
+
+      const render = (title, results) => {
+        const section = document.createElement('section');
+        const heading = document.createElement('h2');
+        heading.textContent = title;
+        const list = document.createElement('ul');
+        for (const r of results) {
+          const item = document.createElement('li');
+          const mark = document.createElement('b');
+          mark.className = r.passed ? 'pass' : 'fail';
+          mark.textContent = r.passed ? 'OK' : 'ERR';
+          const text = document.createElement('span');
+          text.textContent = r.passed ? r.name : `${r.name}: ${r.message}`;
+          item.append(mark, text);
+          list.append(item);
+        }
+        section.append(heading, list);
+        document.querySelector('#results').append(section);
+      };
+
+      const massResults = await runTests(MASS_TESTS);
+      render('Masses i m/z', massResults);
+      const template = await window.HRMS.docx.loadTemplate();
+      const docResults = await runTests(docxTests(template, window.JSZip));
+      render('Formulari Word', docResults);
+
+      const pdfResults = await runTests(pdfTests());
+      render('Formulari PDF', pdfResults);
+
+      const all = [...massResults, ...docResults, ...pdfResults];
+      const failed = all.filter((r) => !r.passed).length;
+      const summary = document.querySelector('#summary');
+      summary.className = failed ? 'fail' : 'pass';
+      summary.textContent = failed ? `${failed} de ${all.length} proves han fallat.` : `${all.length} proves superades.`;
+    })();
+  </script>
+</body>
+</html>
