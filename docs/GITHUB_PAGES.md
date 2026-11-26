@@ -1,35 +1,30 @@
-# Publicar a GitHub Pages
+# Publishing on GitHub Pages
 
-Abans de publicar, omple `js/config.js` seguint [SUPABASE.md](SUPABASE.md).
+Fill in `js/config.js` first, following [SUPABASE.md](SUPABASE.md).
 
-## Des del navegador
+## From the browser
 
-1. Entra a <https://github.com> i crea un compte si no en tens.
-2. Fes clic a **+** → **New repository**.
-3. Posa-li de nom `hrms-manager`, deixa'l **Public** i fes clic a **Create repository**.
-4. Fes clic a **uploading an existing file**.
-5. Descomprimeix el ZIP i arrossega **el contingut** de la carpeta `hrms-manager` (`index.html`, `tests.html`, `css`, `js`, `assets`, `vendor`, `supabase`, `docs`, `README.md`). `index.html` ha de quedar a l'arrel del repositori.
-6. Fes clic a **Commit changes**.
-7. Obre **Settings** → **Pages**.
-8. A **Build and deployment**, tria **Deploy from a branch**, branca `main` i carpeta `/ (root)`, i fes clic a **Save**.
-9. Espera un o dos minuts i recarrega la pàgina: a dalt apareixerà l'adreça, `https://USUARI.github.io/hrms-manager/`.
+1. Create a repository on <https://github.com> (for example `HRMS`) and leave it **Public**.
+2. Click **uploading an existing file** and drag the **contents** of the `hrms-manager` folder: `index.html`, `tests.html`, `css`, `js`, `assets`, `vendor`, `supabase`, `docs` and `README.md`. `index.html` must be at the root of the repository.
+3. Click **Commit changes**.
+4. Open **Settings** → **Pages**, choose **Deploy from a branch**, branch `main`, folder `/ (root)`, and click **Save**. A "Deploy static content to Pages" workflow also works.
+5. After a minute or two the address appears at the top, for example `https://USER.github.io/HRMS/`.
 
-## Després de publicar
+## After publishing
 
-1. Posa aquesta adreça a Supabase, tal com s'explica al pas 4 de [SUPABASE.md](SUPABASE.md).
-2. Obre `https://USUARI.github.io/hrms-manager/tests.html` i comprova que totes les proves s'han superat.
-3. Crea el compte a l'aplicació i registra una mostra de prova.
+1. Open `https://USER.github.io/HRMS/tests.html` and check that every test passes.
+2. Sign in with the shared account and register a test sample.
 
-## Actualitzar l'aplicació
+## Updating
 
-Puja de nou els fitxers modificats amb **Add file** → **Upload files**. GitHub Pages es publica sol en un o dos minuts. Si no veus el canvi, recarrega amb Ctrl+F5.
+Upload the changed files again with **Add file** → **Upload files**. GitHub Pages republishes in a minute or two; reload with Ctrl+F5 if you still see the old version.
 
-## Problemes habituals
+## Common problems
 
-| Què passa | Solució |
+| What happens | Fix |
 |---|---|
-| Surt "Falta configurar Supabase" | `js/config.js` està buit o no s'ha pujat la versió omplerta. |
-| Error 404 en obrir la URL | `index.html` no és a l'arrel del repositori, o Pages encara s'està publicant. |
-| "Falten les taules a Supabase" | Executa `supabase/schema.sql` al SQL Editor. |
-| L'enllaç del correu porta a localhost | Revisa la **Site URL** a Supabase. |
-| No es pot connectar a la base de dades | Pot ser que el projecte de Supabase estigui pausat; reactiva'l des del panell. |
+| "Supabase is not configured" | `js/config.js` is empty or the filled-in version was not uploaded. |
+| 404 when opening the address | `index.html` is not at the repository root, or Pages is still publishing. |
+| "Wrong user or password" with the right password | The shared account does not exist yet in Supabase, or its email does not match `SHARED_LOGIN_EMAIL`. |
+| "The tables are missing in Supabase" | Run `supabase/schema.sql` in the SQL Editor. |
+| No connection to the database | The Supabase project may be paused; reactivate it from the dashboard. |

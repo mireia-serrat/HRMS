@@ -1,10 +1,12 @@
-// Accés a les dades: Supabase o, només amb doble clic i sense configurar, mode de prova local.
+// Data access: Supabase or, only when opened by double click without configuration, local test mode.
 
 (() => {
   'use strict';
 
   const { computeIons, MAX_CHARGE } = window.HRMS.chem;
-  const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.HRMS_CONFIG;
+  const {
+    SUPABASE_URL, SUPABASE_ANON_KEY, SHARED_USERNAME, SHARED_LOGIN_EMAIL,
+  } = window.HRMS_CONFIG;
 
   const PAGE_SIZE = 1000;
   const DEMO_KEY = 'hrms-manager-demo';
@@ -16,30 +18,25 @@
 
   const supabase = isConfigured
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
     })
     : null;
-
-  const redirectUrl = () => window.location.origin + window.location.pathname;
 
   function friendlyError(error) {
     const message = String(error?.message || error || '');
     const code = error?.code || '';
-    if (isDemo) return `No s'han pogut guardar les dades en aquest navegador: ${message}`;
+    if (isDemo) return `The data could not be saved in this browser: ${message}`;
     if (!navigator.onLine || /failed to fetch|networkerror|load failed/i.test(message)) {
-      return 'No hi ha connexió amb la base de dades. Comprova la connexió i torna-ho a provar; no s\'ha desat cap canvi.';
+      return 'There is no connection to the database. Check the connection and try again; nothing was saved.';
     }
-    if (/invalid login credentials/i.test(message)) return 'Correu o contrasenya incorrectes.';
-    if (/email not confirmed/i.test(message)) return 'Encara no has confirmat el correu. Revisa la safata d\'entrada.';
-    if (/user already registered/i.test(message)) return 'Ja existeix un compte amb aquest correu.';
-    if (/password should be/i.test(message)) return 'La contrasenya és massa curta (mínim 6 caràcters).';
-    if (/rate limit/i.test(message)) return 'Massa intents seguits. Espera uns minuts i torna-ho a provar.';
-    if (/jwt|session/i.test(message) || code === 'PGRST301') return 'La sessió ha caducat. Torna a iniciar sessió.';
-    if (code === '42501') return 'No tens permís per fer aquesta operació.';
-    if (code === 'PGRST204') return 'Falten columnes a Supabase. Torna a executar supabase/schema.sql (mira el README).';
-    if (code === '42P01' || code === 'PGRST205') return 'Falten les taules a Supabase. Executa supabase/schema.sql (mira el README).';
-    if (code === '23514') return 'Les dades no compleixen les regles de la base de dades.';
-    return `Error de la base de dades: ${message || 'desconegut'}`;
+    if (/invalid login credentials/i.test(message)) return 'Wrong user or password.';
+    if (/rate limit|too many/i.test(message)) return 'Too many attempts. Wait a few minutes and try again.';
+    if (/jwt|session/i.test(message) || code === 'PGRST301') return 'The session has expired. Sign in again.';
+    if (code === '42501') return 'You are not allowed to do this.';
+    if (code === 'PGRST204') return 'Columns are missing in Supabase. Run supabase/schema.sql again (see the README).';
+    if (code === '42P01' || code === 'PGRST205') return 'The tables are missing in Supabase. Run supabase/schema.sql (see the README).';
+    if (code === '23514') return 'The data does not meet the database rules.';
+    return `Database error: ${message || 'unknown'}`;
   }
 
   function unwrap({ data, error }) {
@@ -47,7 +44,7 @@
     return data;
   }
 
-  // Els valors numèrics es calculen sempre de la fórmula, mai del que arriba del formulari.
+  // Numbers are always calculated from the formula, never taken from the form.
   function buildSampleRow({
     sample_code, molecular_formula, confidence, purity, publication, author, analyzed_by,
   }) {
@@ -70,12 +67,13 @@
   const remote = {
     getSession: async () => unwrap(await supabase.auth.getSession()).session,
     onAuthChange: (callback) => supabase.auth.onAuthStateChange(callback),
-    signIn: async (email, password) => unwrap(await supabase.auth.signInWithPassword({ email, password })),
-    signUp: async (email, password) => unwrap(await supabase.auth.signUp({
-      email, password, options: { emailRedirectTo: redirectUrl() },
-    })),
-    resetPassword: async (email) => unwrap(await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl() })),
-    updatePassword: async (password) => unwrap(await supabase.auth.updateUser({ password })),
+    // There is a single shared account: the user name only selects it, Supabase checks the password.
+    async signIn(username, password) {
+      if (username.toLowerCase() !== String(SHARED_USERNAME || '').toLowerCase()) {
+        throw new Error('Invalid login credentials');
+      }
+      return unwrap(await supabase.auth.signInWithPassword({ email: SHARED_LOGIN_EMAIL, password }));
+    },
     signOut: async () => unwrap(await supabase.auth.signOut()),
 
     async listSamples() {
@@ -94,24 +92,25 @@
     setAnalyzedBy: async (id, name) => unwrap(await supabase.from('samples').update({ analyzed_by: name.trim() }).eq('id', id).select().single()),
     async deleteSample(id) {
       const removed = unwrap(await supabase.from('samples').delete().eq('id', id).select());
-      if (removed.length !== 1) throw new Error('No s\'ha trobat la mostra a la base de dades.');
+      if (removed.length !== 1) throw new Error('The sample was not found in the database.');
     },
-    // Desfà una eliminació tornant a inserir la fila amb el mateix identificador i dates.
+    // Undoes a deletion by inserting the row again with the same id and dates.
     restoreSample: async (row) => unwrap(await supabase.from('samples').insert(row).select().single()),
-
-    getPreferences: async () => unwrap(await supabase.from('user_preferences').select('*').maybeSingle()),
-    savePreferences: async (userId, { name, email, research_group }) => unwrap(await supabase.from('user_preferences')
-      .upsert({ user_id: userId, name, email, research_group })
-      .select().single()),
   };
 
-  // Mode de prova: mateixa interfície que Supabase, sobre l'emmagatzematge del navegador.
+  // Test mode: same interface as Supabase, on top of the browser's storage.
   const readDemo = () => {
     const stored = JSON.parse(localStorage.getItem(DEMO_KEY) || 'null');
-    return stored || { samples: [], preferences: null };
+    return stored || { samples: [] };
   };
   const writeDemo = (store) => localStorage.setItem(DEMO_KEY, JSON.stringify(store));
   const newId = () => `demo-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+
+  function demoRow(store, id) {
+    const row = store.samples.find((s) => s.id === id);
+    if (!row) throw new Error('The sample was not found.');
+    return row;
+  }
 
   const demo = {
     getSession: async () => DEMO_SESSION,
@@ -130,17 +129,13 @@
     },
     async updateSample(id, fields) {
       const store = readDemo();
-      const row = store.samples.find((s) => s.id === id);
-      if (!row) throw new Error('No s\'ha trobat la mostra.');
-      Object.assign(row, buildSampleRow(fields), { updated_at: new Date().toISOString() });
+      const row = Object.assign(demoRow(store, id), buildSampleRow(fields), { updated_at: new Date().toISOString() });
       writeDemo(store);
       return row;
     },
     async setAnalyzedBy(id, name) {
       const store = readDemo();
-      const row = store.samples.find((s) => s.id === id);
-      if (!row) throw new Error('No s\'ha trobat la mostra.');
-      Object.assign(row, { analyzed_by: name.trim(), updated_at: new Date().toISOString() });
+      const row = Object.assign(demoRow(store, id), { analyzed_by: name.trim(), updated_at: new Date().toISOString() });
       writeDemo(store);
       return row;
     },
@@ -154,13 +149,6 @@
       store.samples.push(row);
       writeDemo(store);
       return row;
-    },
-    getPreferences: async () => readDemo().preferences,
-    async savePreferences(userId, preferences) {
-      const store = readDemo();
-      store.preferences = preferences;
-      writeDemo(store);
-      return preferences;
     },
   };
 

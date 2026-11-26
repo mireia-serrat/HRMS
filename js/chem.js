@@ -107,11 +107,11 @@
   // Analitza una fórmula amb elements i subíndexs enters. Admet grups entre
   // parèntesis o claudàtors, p. ex. Ca(OH)2. Distingeix majúscules (Co ≠ CO).
   function parseFormula(input) {
-    if (typeof input !== 'string') throw new FormulaError('Introdueix una fórmula molecular.');
+    if (typeof input !== 'string') throw new FormulaError('Enter a molecular formula.');
     const formula = input.trim();
-    if (!formula) throw new FormulaError('Introdueix una fórmula molecular.');
+    if (!formula) throw new FormulaError('Enter a molecular formula.');
     if (formula.length > MAX_FORMULA_LENGTH) {
-      throw new FormulaError(`La fórmula és massa llarga (màxim ${MAX_FORMULA_LENGTH} caràcters).`);
+      throw new FormulaError(`The formula is too long (at most ${MAX_FORMULA_LENGTH} characters).`);
     }
 
     const closers = { '(': ')', '[': ']' };
@@ -124,16 +124,16 @@
       if (start === i) return 1;
       const digits = formula.slice(start, i);
       if (digits[0] === '0') {
-        throw new FormulaError(`Subíndex no vàlid "${digits}" a la posició ${start + 1}: ha de ser un enter positiu sense zeros inicials.`);
+        throw new FormulaError(`Invalid subscript "${digits}" at position ${start + 1}: it must be a positive integer without leading zeros.`);
       }
       const value = Number(digits);
-      if (value > MAX_COUNT) throw new FormulaError(`El subíndex ${digits} és massa gran.`);
+      if (value > MAX_COUNT) throw new FormulaError(`The subscript ${digits} is too large.`);
       return value;
     };
 
     const add = (map, element, count) => {
       const total = (map.get(element) || 0) + count;
-      if (total > MAX_COUNT) throw new FormulaError(`El nombre d'àtoms de ${element} és massa gran.`);
+      if (total > MAX_COUNT) throw new FormulaError(`The number of ${element} atoms is too large.`);
       map.set(element, total);
     };
 
@@ -145,9 +145,9 @@
       } else if (ch === ')' || ch === ']') {
         const group = stack.pop();
         if (!group.closer || group.closer !== ch) {
-          throw new FormulaError(`Parèntesi "${ch}" sense obrir o mal aparellat a la posició ${i + 1}.`);
+          throw new FormulaError(`Unopened or mismatched bracket "${ch}" at position ${i + 1}.`);
         }
-        if (group.counts.size === 0) throw new FormulaError(`Grup buit a la posició ${group.open + 1}.`);
+        if (group.counts.size === 0) throw new FormulaError(`Empty group at position ${group.open + 1}.`);
         i += 1;
         const multiplier = readCount();
         for (const [element, count] of group.counts) add(stack[stack.length - 1].counts, element, count * multiplier);
@@ -155,22 +155,22 @@
         let symbol = ch;
         if (/[a-z]/.test(formula[i + 1] || '')) symbol += formula[i + 1];
         if (!Object.hasOwn(MONOISOTOPIC_MASS, symbol)) {
-          throw new FormulaError(`Element desconegut o sense isòtop estable: "${symbol}" (posició ${i + 1}).`);
+          throw new FormulaError(`Unknown element or element without a stable isotope: "${symbol}" (position ${i + 1}).`);
         }
         i += symbol.length;
         add(stack[stack.length - 1].counts, symbol, readCount());
       } else if (/[a-z]/.test(ch)) {
-        throw new FormulaError(`Caràcter inesperat "${ch}" a la posició ${i + 1}: els símbols dels elements comencen amb majúscula.`);
+        throw new FormulaError(`Unexpected character "${ch}" at position ${i + 1}: element symbols start with a capital letter.`);
       } else if (/[0-9]/.test(ch)) {
-        throw new FormulaError(`Subíndex sense element a la posició ${i + 1}.`);
+        throw new FormulaError(`Subscript without an element at position ${i + 1}.`);
       } else if (/\s/.test(ch)) {
-        throw new FormulaError(`La fórmula no pot contenir espais (posició ${i + 1}).`);
+        throw new FormulaError(`The formula cannot contain spaces (position ${i + 1}).`);
       } else {
-        throw new FormulaError(`Caràcter no vàlid "${ch}" a la posició ${i + 1}.`);
+        throw new FormulaError(`Invalid character "${ch}" at position ${i + 1}.`);
       }
     }
 
-    if (stack.length !== 1) throw new FormulaError('Falta tancar un parèntesi.');
+    if (stack.length !== 1) throw new FormulaError('A bracket is not closed.');
     return stack[0].counts;
   }
 

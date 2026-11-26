@@ -30,6 +30,7 @@
   const TEMPLATE_SCRIPT = 'assets/template-data.js';
   const CELL_MARGINS_TWIPS = 216;
   const TEXT_SIZES = [18, 16, 14, 12];
+  const DATE_HALF_POINTS = 18;
   const USER_LABEL_PT = 40;
   const EMAIL_CELL_PT = (4286 - CELL_MARGINS_TWIPS) / 20;
   const NEW_SDT_ID = '1957204163';
@@ -37,7 +38,7 @@
 
   class TemplateError extends Error {
     constructor(message) {
-      super(`La plantilla Word no té l'estructura esperada: ${message}`);
+      super(`The Word template does not have the expected structure: ${message}`);
       this.name = 'TemplateError';
     }
   }
@@ -57,7 +58,7 @@
       else if (!m[2]) depth += 1;
       if (depth === 0) return re.lastIndex;
     }
-    throw new TemplateError(`element ${name} sense tancar.`);
+    throw new TemplateError(`element ${name} is not closed.`);
   }
 
   // Elements del rang sense entrar dins dels que ja s'han trobat.
@@ -78,14 +79,14 @@
   function bodyRange(xml) {
     const open = xml.indexOf('<w:body>');
     const close = xml.lastIndexOf('</w:body>');
-    if (open < 0 || close < 0) throw new TemplateError('no hi ha cos de document.');
+    if (open < 0 || close < 0) throw new TemplateError('there is no document body.');
     return { start: open + '<w:body>'.length, end: close };
   }
 
   function locateTables(xml) {
     const body = bodyRange(xml);
     const tables = findElements(xml, body.start, body.end, 'w:tbl');
-    if (tables.length !== 6) throw new TemplateError(`s'esperaven 6 taules i n'hi ha ${tables.length}.`);
+    if (tables.length !== 6) throw new TemplateError(`6 tables were expected and there are ${tables.length}.`);
     return tables;
   }
 
@@ -96,7 +97,7 @@
 
   function requireLabel(xml, cell, label) {
     if (!plainText(xml.slice(cell.start, cell.end)).includes(label)) {
-      throw new TemplateError(`falta l'etiqueta "${label}".`);
+      throw new TemplateError(`the label "${label}" is missing.`);
     }
   }
 
@@ -121,15 +122,15 @@
     const sample2 = locateGrid(xml, tables[2]);
     const confidence1 = sample1[1][1];
     const fragment = xml.slice(confidence1.start, confidence1.end);
-    if (!fragment.includes(' LINK ')) throw new TemplateError('falta el camp de Confidence de la Sample 1.');
+    if (!fragment.includes(' LINK ')) throw new TemplateError('the Confidence field of Sample 1 is missing.');
 
     const runs = findElements(fragment, 0, fragment.length, 'w:r');
     const beginRun = runs.find((r) => fragment.slice(r.start, r.end).includes('w:fldCharType="begin"'));
     const endRun = runs.find((r) => fragment.slice(r.start, r.end).includes('w:fldCharType="end"'));
-    if (!beginRun || !endRun) throw new TemplateError('camp LINK incomplet.');
+    if (!beginRun || !endRun) throw new TemplateError('incomplete LINK field.');
 
     const [sdt] = findElements(xml, sample2[1][1].start, sample2[1][1].end, 'w:sdt');
-    if (!sdt) throw new TemplateError('falta el desplegable de Confidence de la Sample 2.');
+    if (!sdt) throw new TemplateError('the Confidence drop-down of Sample 2 is missing.');
     const clone = xml.slice(sdt.start, sdt.end).replace(/<w:id w:val="-?\d+"\/>/, `<w:id w:val="${NEW_SDT_ID}"/>`);
 
     const edits = new Edits();
@@ -160,14 +161,14 @@
 
   function appendToParagraph(edits, xml, paragraph, runs) {
     const at = paragraph.end - '</w:p>'.length;
-    if (xml.slice(at, paragraph.end) !== '</w:p>') throw new TemplateError('paràgraf sense contingut editable.');
+    if (xml.slice(at, paragraph.end) !== '</w:p>') throw new TemplateError('paragraph without editable content.');
     edits.replace(at, at, runs);
   }
 
   function dropdownText(xml, sdt) {
     const contentStart = xml.indexOf('<w:sdtContent>', sdt.start);
     const texts = [...xml.slice(contentStart, sdt.end).matchAll(T_ELEMENT)];
-    if (texts.length !== 1) throw new TemplateError('desplegable amb contingut inesperat.');
+    if (texts.length !== 1) throw new TemplateError('drop-down with unexpected content.');
     const start = contentStart + texts[0].index;
     return { start, end: start + texts[0][0].length, value: texts[0][1] };
   }
@@ -193,7 +194,7 @@
     const [priority] = dropdownsIn(xml, grid[3][2]);
     const all = { returned, toxicity, confidence, purity, sensitivity, solvent, ionization, publication, priority };
     for (const [name, range] of Object.entries(all)) {
-      if (!range) throw new TemplateError(`falta el desplegable ${name}.`);
+      if (!range) throw new TemplateError(`the ${name} drop-down is missing.`);
     }
     return all;
   }
@@ -212,7 +213,7 @@
     const [paragraph] = paragraphsOf(xml, cell);
     const pPrOpen = xml.indexOf('<w:pPr>', paragraph.start);
     if (pPrOpen < 0 || pPrOpen > paragraph.end || !xml.startsWith('<w:rPr>', pPrOpen + 7)) {
-      throw new TemplateError('format inesperat a la cel·la de m/z.');
+      throw new TemplateError('unexpected format in the m/z cell.');
     }
     const tabPos = cellWidthPt(xml, cell) * 20 - 40;
     edits.replace(pPrOpen + 7, pPrOpen + 7, `<w:tabs><w:tab w:val="right" w:pos="${tabPos}"/></w:tabs><w:spacing w:after="0" w:line="240" w:lineRule="auto"/>`);
@@ -309,7 +310,7 @@
     const group = String(user.research_group || '').trim();
     const emails = parseEmails(user.email);
     const emailLayout = emails.length ? layoutEmails(emails, widths.email) : null;
-    if (emails.length && !emailLayout) throw new Error('Hi ha massa correus per a l\'espai del formulari.');
+    if (emails.length && !emailLayout) throw new Error('Too many email addresses for the space in the form.');
     return {
       name: name ? { text: name, size: fitSize(` ${name}`, widths.name - USER_LABEL_PT, TEXT_SIZES) || 12 } : null,
       emails: emailLayout,
@@ -337,8 +338,8 @@
         // Dues línies exactes ocupen el mateix que la línia original a 1,5.
         const oldSpacing = 'w:line="360" w:lineRule="auto"';
         const at = xml.indexOf(oldSpacing, paragraph.start);
-        if (at < 0 || at > paragraph.end) throw new TemplateError('format inesperat a la cel·la Email.');
-        edits.replace(at, at + oldSpacing.length, 'w:line="201" w:lineRule="exact"');
+        if (at < 0 || at > paragraph.end) throw new TemplateError('unexpected format in the Email cell.');
+        edits.replace(at, at + oldSpacing.length, 'w:line="202" w:lineRule="exact"');
       }
     }
     if (layout.group) {
@@ -359,19 +360,30 @@
     };
   }
 
+  // "Date Submitted:" is a paragraph above the tables; the date goes right after the label.
+  function fillDate(edits, xml, date) {
+    const text = String(date || '').trim();
+    if (!text) return;
+    const label = xml.indexOf('>e Submitted<');
+    if (label < 0 || xml.indexOf('>e Submitted<', label + 1) >= 0) throw new TemplateError('the "Date Submitted" label is missing.');
+    const paragraphEnd = xml.indexOf('</w:p>', label);
+    edits.replace(paragraphEnd, paragraphEnd, textRun(` ${text}`, DATE_HALF_POINTS));
+  }
+
   // Retorna el document.xml emplenat. `samples` en l'ordre desitjat (1 a 5).
-  function fillDocumentXml(originalXml, { user, samples }) {
-    if (!Array.isArray(samples) || samples.length < 1) throw new Error('Selecciona almenys una mostra.');
-    if (samples.length > MAX_SAMPLES) throw new Error(`El formulari només admet ${MAX_SAMPLES} mostres.`);
+  function fillDocumentXml(originalXml, { user, samples, date }) {
+    if (!Array.isArray(samples) || samples.length < 1) throw new Error('Select at least one sample.');
+    if (samples.length > MAX_SAMPLES) throw new Error(`The form holds at most ${MAX_SAMPLES} samples.`);
 
     const xml = normalizeTemplate(originalXml);
     const tables = locateTables(xml);
     const edits = new Edits();
+    fillDate(edits, xml, date);
     fillUserInfo(edits, xml, locateGrid(xml, tables[0]), user || {});
 
     for (let slot = 0; slot < MAX_SAMPLES; slot += 1) {
       const grid = locateGrid(xml, tables[slot + 1]);
-      if (grid.length !== 7) throw new TemplateError(`la Sample ${slot + 1} no té 7 files.`);
+      if (grid.length !== 7) throw new TemplateError(`Sample ${slot + 1} does not have 7 rows.`);
       if (samples[slot]) {
         fillSample(edits, xml, grid, samples[slot]);
       } else {
@@ -385,7 +397,7 @@
   async function generateDocx(template, data, JSZip) {
     const zip = await JSZip.loadAsync(template);
     const entry = zip.file('word/document.xml');
-    if (!entry) throw new TemplateError('falta word/document.xml.');
+    if (!entry) throw new TemplateError('word/document.xml is missing.');
     // createFolders: false perquè el ZIP no guanyi una entrada "word/" que l'original no té.
     zip.file('word/document.xml', fillDocumentXml(await entry.async('string'), data), { createFolders: false });
     return zip.generateAsync({
@@ -402,14 +414,14 @@
       const script = document.createElement('script');
       script.src = TEMPLATE_SCRIPT;
       script.onload = () => resolve(Uint8Array.from(atob(window.HRMS_TEMPLATE_BASE64), (c) => c.charCodeAt(0)).buffer);
-      script.onerror = () => reject(new Error('No s\'ha pogut carregar la plantilla oficial del Word.'));
+      script.onerror = () => reject(new Error('The official Word template could not be loaded.'));
       document.head.append(script);
     });
   }
 
   async function fetchTemplate() {
     const response = await fetch(TEMPLATE_URL, { cache: 'no-cache' });
-    if (!response.ok) throw new Error('No s\'ha pogut carregar la plantilla oficial del Word.');
+    if (!response.ok) throw new Error('The official Word template could not be loaded.');
     return response.arrayBuffer();
   }
 

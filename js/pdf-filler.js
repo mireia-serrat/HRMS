@@ -20,7 +20,7 @@
         script.onload = resolve;
         script.onerror = () => {
           scripts.delete(src);
-          reject(new Error('No s\'han pogut carregar els fitxers del PDF.'));
+          reject(new Error('The PDF files could not be loaded.'));
         };
         document.head.append(script);
       }));
@@ -31,8 +31,10 @@
   const decode = (base64) => Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 
   // Les bases porten en cada espai utilitzat els valors fixos; els restants queden buits.
-  async function generatePdf({ user, samples }) {
-    if (!samples.length || samples.length > MAX_SAMPLES) throw new Error(`Selecciona entre 1 i ${MAX_SAMPLES} mostres.`);
+  async function generatePdf({
+    user, samples, date, title,
+  }) {
+    if (!samples.length || samples.length > MAX_SAMPLES) throw new Error(`Select between 1 and ${MAX_SAMPLES} samples.`);
     await loadScript('vendor/pdf-lib.min.js');
     await Promise.all([
       loadScript('vendor/fontkit.umd.min.js'),
@@ -50,6 +52,7 @@
       pages[page].drawText(text, { x, y, size: halfPoints / 2, font });
     };
 
+    if (date) put(layout.date, String(date), VALUE_HALF_POINTS);
     const info = userLayout(user, layout.user.widths);
     if (info.name) put(layout.user.name, info.name.text, info.name.size);
     if (info.group) put(layout.user.group, info.group.text, info.group.size);
@@ -77,7 +80,7 @@
       });
     });
 
-    pdf.setTitle('UEM095 COMPACT Request Form');
+    pdf.setTitle(title || 'UEM095 COMPACT Request Form');
     return pdf.save();
   }
 

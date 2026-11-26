@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ca">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Proves · HRMS Manager</title>
+  <title>Tests · HRMS Manager</title>
   <link rel="stylesheet" href="css/styles.css">
   <style>
     .tests { max-width: 760px; margin: 0 auto; padding: 28px 16px; }
@@ -18,8 +18,8 @@
 </head>
 <body>
   <main class="tests">
-    <h1>Proves automàtiques</h1>
-    <p id="summary" class="muted">Executant…</p>
+    <h1>Automatic tests</h1>
+    <p id="summary" class="muted">Running…</p>
     <div id="results"></div>
   </main>
   <script src="vendor/jszip.min.js"></script>
@@ -53,19 +53,19 @@
       };
 
       const massResults = await runTests(MASS_TESTS);
-      render('Masses i m/z', massResults);
+      render('Masses and m/z', massResults);
       const template = await window.HRMS.docx.loadTemplate();
       const docResults = await runTests(docxTests(template, window.JSZip));
-      render('Formulari Word', docResults);
+      render('Word form', docResults);
 
       const pdfResults = await runTests(pdfTests());
-      render('Formulari PDF', pdfResults);
+      render('PDF form', pdfResults);
 
       const all = [...massResults, ...docResults, ...pdfResults];
       const failed = all.filter((r) => !r.passed).length;
       const summary = document.querySelector('#summary');
       summary.className = failed ? 'fail' : 'pass';
-      summary.textContent = failed ? `${failed} de ${all.length} proves han fallat.` : `${all.length} proves superades.`;
+      summary.textContent = failed ? `${failed} of ${all.length} tests failed.` : `All ${all.length} tests passed.`;
     })();
   </script>
 </body>

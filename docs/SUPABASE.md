@@ -1,54 +1,40 @@
-# Configurar Supabase
+# Setting up Supabase
 
-## 1. Crea el projecte
+## 1. Create the project
 
-1. Entra a <https://supabase.com> i crea un compte.
-2. Fes clic a **New project**. Tria un nom (`hrms-manager`), una contrasenya de base de dades i una regió europea.
-3. Espera que el projecte estigui a punt.
+1. Go to <https://supabase.com> and sign in.
+2. Click **New project**, name it (`hrms-manager`), choose a database password and a European region.
+3. Wait until the project is ready.
 
-## 2. Crea les taules i la seguretat
+## 2. Create the tables and the security rules
 
-1. Al menú lateral, obre **SQL Editor** → **New query**.
-2. Enganxa-hi tot el contingut de `supabase/schema.sql`.
-3. Fes clic a **Run**. Ha de sortir `Success`.
+1. Open **SQL Editor** → **New query**.
+2. Paste the whole content of `supabase/schema.sql` and click **Run**. You should see `Success. No rows returned`.
 
-Si ja havies executat una versió anterior, torna'l a executar: afegeix les columnes noves sense esborrar cap mostra.
+The file is safe to run again: it keeps every sample and replaces the security rules. Run it again whenever it changes.
 
-Comprovació: a **Table Editor** han d'aparèixer `samples` i `user_preferences`, totes dues sense l'avís "RLS disabled".
+## 3. Create the shared account
 
-## 3. Connecta l'aplicació
+1. Open **Authentication** → **Users** → **Add user** → **Create new user**.
+2. Email: `estudiantslippso@example.com`. This address is never used to send mail; it only identifies the account and must match `SHARED_LOGIN_EMAIL` in `js/config.js`.
+3. Password: the shared laboratory password.
+4. Tick **Auto Confirm User** and click **Create user**.
 
-1. Obre **Project Settings** → **API** (o **API Keys**).
-2. Copia la **Project URL** i la clau pública, anomenada `anon` o `publishable`.
-3. Enganxa-les a `js/config.js`:
+On the login screen people type the user `estudiantsLIPPSO` and that password.
 
-```js
-window.HRMS_CONFIG = {
-  SUPABASE_URL: 'https://xxxxxxxx.supabase.co',
-  SUPABASE_ANON_KEY: 'la-teva-clau-publica',
-};
-```
+To change the password later, open the user in **Authentication** → **Users** and set a new one. To use another user name or email, change `SHARED_USERNAME` or `SHARED_LOGIN_EMAIL` in `js/config.js`.
 
-> No facis servir mai la clau `service_role` / `secret`: dona accés total i saltaria RLS.
+## 4. Close sign-ups
 
-## 4. Configura els enllaços de correu
+In **Authentication** → **Sign In / Providers**, turn off **Allow new users to sign up** and save. This way the shared account is the only one that can get in.
 
-A **Authentication** → **URL Configuration**:
+## 5. Connect the app
 
-- **Site URL:** `https://USUARI.github.io/hrms-manager/`
-- **Redirect URLs:** afegeix la mateixa adreça.
+1. Open **Project Settings** → **API Keys** (or click **Connect**).
+2. Copy the **Project URL** and the **publishable** (or `anon`) key into `js/config.js`.
 
-Sense això, els enllaços de confirmació i de recuperació de contrasenya no tornen a l'aplicació.
+Never use the `service_role` / `secret` key: it bypasses every security rule.
 
-## 5. Tanca el registre (recomanat)
+## Checking that it works
 
-1. Obre l'aplicació publicada i crea el compte de cadascuna de les persones que l'han d'utilitzar.
-2. A **Authentication** → **Sign In / Providers**, desactiva **Allow new users to sign up**.
-
-Si no ho fas, qualsevol persona amb la URL es pot crear un compte. No veuria les teves mostres, però podria guardar-ne de pròpies a la teva base de dades.
-
-Cada compte té les seves mostres: dues persones del laboratori no veuen les dades de l'altra si no comparteixen compte.
-
-## Comprovar que les dades es guarden
-
-Registra una mostra a l'aplicació i obre **Table Editor** → `samples`: hi ha de ser la fila amb els vuit m/z. Tanca el navegador, torna a entrar i la mostra ha de continuar a la llista.
+Sign in on the website, register a sample and open **Table Editor** → `samples`: the row must be there with its eight m/z values. Close the browser, open the website again and check that the sample is still listed.
