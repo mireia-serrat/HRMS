@@ -4,23 +4,32 @@
   'use strict';
 
   const { computeIons, MAX_CHARGE } = window.HRMS.chem;
-  const {
-    SUPABASE_URL, SUPABASE_ANON_KEY, SHARED_USERNAME, SHARED_LOGIN_EMAIL,
-  } = window.HRMS_CONFIG;
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, SHARED_USERNAME } = window.HRMS_CONFIG;
 
   const PAGE_SIZE = 1000;
   const DEMO_KEY = 'hrms-manager-demo';
-  const DEMO_SESSION = { user: { id: 'demo', email: '' } };
+  const PASSWORD_KEY = 'hrms-manager-lab-password';
+  const DEMO_SESSION = { user: { id: 'demo' } };
+  const LAB_SESSION = { user: { id: 'lab' } };
 
   const isConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
   const isDemo = !isConfigured && window.location.protocol === 'file:';
   const isAvailable = isConfigured || isDemo;
 
-  const supabase = isConfigured
-    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
-    })
-    : null;
+  // There are no accounts: every request carries the laboratory password, which the database checks.
+  let supabase = null;
+  const connect = (password) => {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      global: { headers: { 'x-lab-password': password } },
+    });
+  };
+
+  const storage = {
+    get() { try { return localStorage.getItem(PASSWORD_KEY); } catch { return null; } },
+    set(value) { try { localStorage.setItem(PASSWORD_KEY, value); } catch { /* stays signed in until reload */ } },
+    clear() { try { localStorage.removeItem(PASSWORD_KEY); } catch { /* nothing stored */ } },
+  };
 
   function friendlyError(error) {
     const message = String(error?.message || error || '');
@@ -30,6 +39,9 @@
       return 'There is no connection to the database. Check the connection and try again; nothing was saved.';
     }
     if (/invalid login credentials/i.test(message)) return 'Wrong user or password.';
+    if (/password has changed/i.test(message)) return 'The laboratory password has changed. Sign in again.';
+    if (/ISO-8859-1|non ISO|Headers/i.test(message)) return 'The password can only contain basic Latin characters.';
+    if (code === '42883' || code === 'PGRST202') return 'The database is not set up. Run supabase/schema.sql (see the README).';
     if (/rate limit|too many/i.test(message)) return 'Too many attempts. Wait a few minutes and try again.';
     if (/jwt|session/i.test(message) || code === 'PGRST301') return 'The session has expired. Sign in again.';
     if (code === '42501') return 'You are not allowed to do this.';
@@ -65,18 +77,30 @@
   }
 
   const remote = {
-    getSession: async () => unwrap(await supabase.auth.getSession()).session,
-    onAuthChange: (callback) => supabase.auth.onAuthStateChange(callback),
-    // There is a single shared account: the user name only selects it, Supabase checks the password.
+    // A password remembered on this device signs in straight away.
+    async getSession() {
+      const password = storage.get();
+      if (!password) return null;
+      connect(password);
+      return LAB_SESSION;
+    },
     async signIn(username, password) {
       if (username.toLowerCase() !== String(SHARED_USERNAME || '').toLowerCase()) {
         throw new Error('Invalid login credentials');
       }
-      return unwrap(await supabase.auth.signInWithPassword({ email: SHARED_LOGIN_EMAIL, password }));
+      connect(password);
+      if (!unwrap(await supabase.rpc('lab_password_ok'))) throw new Error('Invalid login credentials');
+      storage.set(password);
+      return LAB_SESSION;
     },
-    signOut: async () => unwrap(await supabase.auth.signOut()),
+    async signOut() {
+      storage.clear();
+      supabase = null;
+    },
 
     async listSamples() {
+      // A wrong password would only return an empty list, so it is checked first.
+      if (!unwrap(await supabase.rpc('lab_password_ok'))) throw new Error('The laboratory password has changed.');
       const rows = [];
       for (let from = 0; ; from += PAGE_SIZE) {
         const page = unwrap(await supabase.from('samples').select('*')
@@ -114,7 +138,6 @@
 
   const demo = {
     getSession: async () => DEMO_SESSION,
-    onAuthChange: () => {},
     signOut: async () => {},
     listSamples: async () => readDemo().samples.sort((a, b) => b.created_at.localeCompare(a.created_at)),
     async insertSample(fields) {

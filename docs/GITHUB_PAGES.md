@@ -13,7 +13,7 @@ Fill in `js/config.js` first, following [SUPABASE.md](SUPABASE.md).
 ## After publishing
 
 1. Open `https://USER.github.io/HRMS/tests.html` and check that every test passes.
-2. Sign in with the shared account and register a test sample.
+2. Sign in with the laboratory user and password and register a test sample.
 
 ## Updating
 
@@ -25,6 +25,6 @@ Upload the changed files again with **Add file** → **Upload files**. GitHub Pa
 |---|---|
 | "Supabase is not configured" | `js/config.js` is empty or the filled-in version was not uploaded. |
 | 404 when opening the address | `index.html` is not at the repository root, or Pages is still publishing. |
-| "Wrong user or password" with the right password | The shared account does not exist yet in Supabase, or its email does not match `SHARED_LOGIN_EMAIL`. |
+| "Wrong user or password" with the right password | The password was not set in Supabase yet (step 3 of SUPABASE.md), or `SHARED_USERNAME` differs. |
 | "The tables are missing in Supabase" | Run `supabase/schema.sql` in the SQL Editor. |
 | No connection to the database | The Supabase project may be paused; reactivate it from the dashboard. |

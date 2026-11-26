@@ -6,15 +6,15 @@ It runs entirely in the browser: HTML, CSS and JavaScript on GitHub Pages, with 
 
 ## Using it
 
-1. Open the website and sign in with the shared laboratory account (user `estudiantsLIPPSO`; ask the coordinator for the password). The browser keeps you signed in.
+1. Open the website and sign in with the shared laboratory user (`estudiantsLIPPSO`) and password; ask the coordinator for the password. The browser keeps you signed in.
 2. **New sample**: enter the sample details. The monoisotopic mass and the eight m/z values are calculated as you type.
-3. **Database**: search, filter, edit, duplicate or delete samples, and add who analyzed them. Everyone using the shared account sees every sample.
+3. **Database**: search, filter, edit, duplicate or delete samples, and add who analyzed them. Everyone sees every sample.
 4. Tick between one and five samples and press **Request form**. Check the order, fill in User Info and the date, and choose **Download Word** or **Download PDF**. The file is named `Name_Date`, for example `Mireia Serrat_26-11-2026.docx`.
 5. **Settings**: your User Info is remembered on your own device, so each person keeps their own details.
 
 ## Setting it up
 
-1. **Supabase**: follow [docs/SUPABASE.md](docs/SUPABASE.md) to create the tables, the shared account and close sign-ups.
+1. **Supabase**: follow [docs/SUPABASE.md](docs/SUPABASE.md): run one SQL file and set the laboratory password. No user accounts are needed.
 2. **GitHub Pages**: follow [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md).
 3. Open `tests.html` on the published site and check that every test passes.
 
@@ -28,7 +28,7 @@ hrms-manager/
 ├── tests.html              Automatic tests, run in the browser
 ├── css/styles.css          Design
 ├── js/
-│   ├── config.js           Supabase URL, public key and shared account
+│   ├── config.js           Supabase URL, public key and shared user name
 │   ├── chem.js             Formula parser, masses and m/z
 │   ├── docx-filler.js      Fills the official DOCX
 │   ├── pdf-filler.js       Builds the PDF
@@ -70,14 +70,15 @@ A browser cannot convert DOCX to PDF faithfully, and an online converter would r
 ## Security
 
 - `js/config.js` holds the **public** Supabase key, which is meant for the browser. The data is protected by Row Level Security: without signing in nothing can be read or changed.
-- There is a single shared account. Its password is checked by Supabase and is not stored in this repository.
+- There are no accounts. The website sends the laboratory password with every request and the database only answers when it matches. The password is stored in the database only as a bcrypt hash and is not in this repository.
+- Each browser remembers the password after signing in, until **Sign out**.
 - Never put the `service_role` / `secret` key in the code.
 - Deleting asks for confirmation and can be undone for a few seconds.
 
 ## Limitations
 
 - **Free Supabase plan**: projects without activity for a week can be paused. The data is kept; reactivate the project from the dashboard.
-- **Shared account**: everyone can edit and delete every sample, and the database cannot tell who did what. The Author and Analyzed by fields record the people involved.
+- **Shared password**: everyone can edit and delete every sample, and the database cannot tell who did what. The Author and Analyzed by fields record the people involved.
 - **Text limits in the form**: Sample code up to 35 characters and Research group up to 80, so they fit without moving the tables.
 
 ## License

@@ -4,8 +4,7 @@
 window.HRMS_CONFIG = {
   SUPABASE_URL: 'https://ppozoprmfjempmhbttib.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_UJIKEg9gHH9cZRE4ojy02w_m08BSbBU',
-  // The single shared account. The user name typed on the login screen selects this Supabase user;
-  // the password is checked by Supabase and is never stored in the code.
+  // User name typed on the login screen. The password is checked by the database
+  // (see supabase/schema.sql) and is never stored in the code.
   SHARED_USERNAME: 'estudiantsLIPPSO',
-  SHARED_LOGIN_EMAIL: 'estudiantslippso@example.com',
 };

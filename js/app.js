@@ -168,7 +168,13 @@
       state.selection = state.selection.filter((id) => byId(id));
       state.loaded = true;
     } catch (error) {
-      state.loadError = db.friendlyError(error);
+      if (/password has changed/i.test(error.message)) {
+        await db.signOut();
+        state.session = null;
+        toast(db.friendlyError(error), 'error');
+      } else {
+        state.loadError = db.friendlyError(error);
+      }
     } finally {
       state.loading = false;
       // When an edit link is opened directly, the form can only be filled once the data is here.
@@ -355,7 +361,7 @@
       </form>
       <div class="stack">
         ${db.isDemo ? '<section class="card"><h2>Session</h2><p class="small muted">Local test mode: there is no login and the data stays in this browser.</p></section>' : `<section class="card"><h2>Session</h2>
-          <p class="small muted">Signed in with the shared laboratory account. All samples are shared.</p>
+          <p class="small muted">Signed in with the shared laboratory password. All samples are shared.</p>
           <div class="form-actions" style="margin-top:14px"><button class="btn btn--ghost" data-action="sign-out">Sign out</button></div>
         </section>`}
         <section class="card"><h2>Checks</h2>
@@ -380,7 +386,7 @@
       <div class="field"><label for="a-password">Password</label><input id="a-password" type="password" name="password" autocomplete="current-password" required></div>
       <div class="error" id="auth-error" role="alert"></div>
       <button class="btn btn--primary btn--large btn--block" type="submit" id="auth-submit">Sign in</button>
-      <p class="hint" style="margin-top:14px;text-align:center">Use the shared laboratory account. You stay signed in on this device.</p>
+      <p class="hint" style="margin-top:14px;text-align:center">Use the shared laboratory user and password. You stay signed in on this device.</p>
     </form>${footer('site-footer--dark')}</div>`;
   }
 
@@ -798,7 +804,8 @@
 
     setButtonBusy(button, true, 'Signing in…');
     try {
-      await db.signIn(username, password);
+      state.session = await db.signIn(username, password);
+      await loadData();
     } catch (error) {
       errorEl.textContent = db.friendlyError(error);
       setButtonBusy(button, false);
@@ -806,11 +813,10 @@
   }
 
   async function handleSignOut() {
-    try {
-      await db.signOut();
-    } catch (error) {
-      toast(db.friendlyError(error), 'error');
-    }
+    await db.signOut();
+    state.session = null;
+    resetSessionData();
+    render();
   }
 
   function resetSessionData() {
@@ -881,17 +887,6 @@
 
   async function start() {
     if (!db.isAvailable) { render(); return; }
-
-    db.onAuthChange((authEvent, session) => {
-      // Supabase asks not to call its own methods inside this callback.
-      setTimeout(() => {
-        const previous = state.session?.user?.id;
-        state.session = session;
-        if (!session) { resetSessionData(); render(); return; }
-        if (session.user.id !== previous) loadData();
-      }, 0);
-    });
-
     try {
       state.session = await db.getSession();
     } catch (error) {
