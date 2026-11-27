@@ -89,7 +89,7 @@
 
   const footer = (variant = '') => `<footer class="site-footer ${variant}">
     <a href="${LICENSE_URL}" target="_blank" rel="license noopener"><img src="assets/img/cc-by-nc-nd.png" alt="Creative Commons BY-NC-ND 4.0 license" width="88" height="31"></a>
-    <p>PGLearn © 2026 Mireia Serrat. This work is licensed under the <a href="${LICENSE_URL}" target="_blank" rel="license noopener">Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License (CC BY-NC-ND 4.0)</a>.</p>
+    <p>© 2026 Mireia Serrat. This work is licensed under the <a href="${LICENSE_URL}" target="_blank" rel="license noopener">Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License (CC BY-NC-ND 4.0)</a>.</p>
   </footer>`;
 
   // --- Notifications and dialogs ---

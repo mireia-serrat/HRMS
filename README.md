@@ -83,6 +83,6 @@ A browser cannot convert DOCX to PDF faithfully, and an online converter would r
 
 ## License
 
-PGLearn © 2026 Mireia Serrat. This work is licensed under the [Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License (CC BY-NC-ND 4.0)](https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode.en).
+© 2026 Mireia Serrat. This work is licensed under the [Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License (CC BY-NC-ND 4.0)](https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode.en).
 
 The libraries in `vendor/` and the Carlito font keep their own licenses (MIT, and SIL OFL 1.1 in `assets/pdf/CARLITO-LICENSE.txt`).
