@@ -85,7 +85,7 @@
     close: '<path d="M18 6 6 18M6 6l12 12"/>',
   }[name]}</svg>`;
 
-  const logo = '<svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1f4e8c"/><path d="M7 24v-6M12 24V9M17 24v-9M22 24v-4M26 24v-2" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  const formulaHtml = (formula) => String(formula ?? '').split(/(\d+)/).map((part, i) => (i % 2 ? `<sub>${part}</sub>` : esc(part))).join('');
 
   const footer = (variant = '') => `<footer class="site-footer ${variant}">
     <a href="${LICENSE_URL}" target="_blank" rel="license noopener"><img src="assets/img/cc-by-nc-nd.png" alt="Creative Commons BY-NC-ND 4.0 license" width="88" height="31"></a>
@@ -315,7 +315,7 @@
       return `<tr class="${selected ? 'selected' : ''}">
         <td data-label="Select"><input type="checkbox" data-select="${s.id}" aria-label="Select ${esc(s.sample_code)}" ${selected ? 'checked' : ''} ${!selected && full ? 'disabled title="Five samples are already selected"' : ''}></td>
         <td data-label="Sample code" class="code">${esc(s.sample_code)}</td>
-        <td data-label="Formula" class="formula">${esc(s.molecular_formula)}</td>
+        <td data-label="Formula" class="formula">${formulaHtml(s.molecular_formula)}</td>
         <td data-label="Confidence">${confidenceTag(s.confidence)}</td>
         <td data-label="Purity">${purityTag(s.purity)}</td>
         <td data-label="Publication">${publicationTag(s.publication)}</td>
@@ -381,6 +381,7 @@
 
   function viewAuth() {
     return `<div class="auth"><form class="auth-card" id="auth-form" novalidate>
+      <img class="auth-logo" src="assets/img/lippso-logo.png" alt="LIPPSO">
       <h1>HRMS Manager</h1><p class="sub">HRMS-ESI sample management</p>
       <div class="field"><label for="a-user">User</label><input id="a-user" type="text" name="username" autocomplete="username" autocapitalize="off" spellcheck="false" required></div>
       <div class="field"><label for="a-password">Password</label><input id="a-password" type="password" name="password" autocomplete="current-password" required></div>
@@ -419,7 +420,7 @@
 
     appRoot.innerHTML = `<div class="shell">
       <aside class="sidebar">
-        <div class="brand">${logo}<div>HRMS Manager<small>HRMS-ESI samples</small></div></div>
+        <div class="brand"><span class="brand-logo"><img src="assets/img/lippso-logo.png" alt="LIPPSO – Laboratori d'Innovació en Processos i Productes de Síntesi Orgànica"></span><div class="brand-name">HRMS Manager<small>HRMS-ESI samples</small></div></div>
         <nav class="nav">${NAV.map(([id, label, ic, short]) => `<a href="#/${id}" class="${activePage === id ? 'active' : ''}">${icon(ic)}<span>${narrow ? short : label}</span>${id === 'database' ? navBadge() : ''}</a>`).join('')}</nav>
         <div class="account">${db.isDemo ? '<span>Local test mode</span>' : '<span>Shared lab account</span><button class="btn btn--on-dark btn--small" data-action="sign-out">Sign out</button>'}</div>
       </aside>
@@ -569,7 +570,7 @@
     if (!sample) return;
     const accepted = await confirmDialog({
       title: 'Delete this sample?',
-      body: `<strong>${esc(sample.sample_code)}</strong> (<span class="mono">${esc(sample.molecular_formula)}</span>) will be removed from the shared database.`,
+      body: `<strong>${esc(sample.sample_code)}</strong> (<span class="mono">${formulaHtml(sample.molecular_formula)}</span>) will be removed from the shared database.`,
       confirmLabel: 'Delete',
       danger: true,
     });
@@ -630,7 +631,7 @@
     const sample = byId(id);
     if (!sample) return;
     openModal(`<div class="modal-body"><h2>${esc(sample.sample_code)}</h2>
-      <p class="mono small muted" style="margin-bottom:12px;overflow-wrap:anywhere">${esc(sample.molecular_formula)}</p>
+      <p class="mono small muted" style="margin-bottom:12px;overflow-wrap:anywhere">${formulaHtml(sample.molecular_formula)}</p>
       ${ionsTable(sample.molecular_formula)}
       <div class="modal-actions"><button class="btn btn--primary" data-action="close-modal" autofocus>Close</button></div></div>`);
   }
@@ -678,7 +679,7 @@
       const sample = byId(state.selection[i]);
       slots.push(sample
         ? `<li class="slot"><span class="slot-num">SAMPLE ${i + 1}</span>
-            <div class="slot-body"><b>${esc(sample.sample_code)}</b><span>${esc(sample.molecular_formula)}</span></div>
+            <div class="slot-body"><b>${esc(sample.sample_code)}</b><span>${formulaHtml(sample.molecular_formula)}</span></div>
             <div class="slot-tools">
               <button class="icon-btn" type="button" data-action="slot-up" data-index="${i}" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>${icon('up', 16)}</button>
               <button class="icon-btn" type="button" data-action="slot-down" data-index="${i}" aria-label="Move down" ${i === state.selection.length - 1 ? 'disabled' : ''}>${icon('down', 16)}</button>
