@@ -422,7 +422,7 @@
       <aside class="sidebar">
         <div class="brand"><span class="brand-logo"><img src="assets/img/lippso-logo.png" alt="LIPPSO – Laboratori d'Innovació en Processos i Productes de Síntesi Orgànica"></span><div class="brand-name">HRMS Manager<small>HRMS-ESI samples</small></div></div>
         <nav class="nav">${NAV.map(([id, label, ic, short]) => `<a href="#/${id}" class="${activePage === id ? 'active' : ''}">${icon(ic)}<span>${narrow ? short : label}</span>${id === 'database' ? navBadge() : ''}</a>`).join('')}</nav>
-        <div class="account">${db.isDemo ? '<span>Local test mode</span>' : '<span>Shared lab account</span><button class="btn btn--on-dark btn--small" data-action="sign-out">Sign out</button>'}</div>
+        <div class="account">${db.isDemo ? '<span>Local test mode</span>' : '<span>Shared lab account</span><button class="btn btn--ghost btn--small" data-action="sign-out">Sign out</button>'}</div>
       </aside>
       <main class="main">
         <div class="main-content">
